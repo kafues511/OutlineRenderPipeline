@@ -1,4 +1,4 @@
-// Copyright kafues511, Inc. All Rights Reserved.
+// Copyright 2024 kafues511. All Rights Reserved.
 
 #include "OutlineSettings.h"
 
