@@ -1,0 +1,54 @@
+// Copyright kafues511, Inc. All Rights Reserved.
+
+/*=============================================================================
+	Outline.usf: 輪郭線描画
+=============================================================================*/
+
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/SceneTexturesCommon.ush"
+#include "/Engine/Private/DeferredShadingCommon.ush"
+
+static const uint   kSampleCount = 4;
+static const float2 kSampleOffsetArray[kSampleCount] = {
+	float2( 0.0, -1.0),
+	float2( 1.0,  0.0),
+	float2( 0.0,  1.0),
+	float2(-1.0,  0.0),
+};
+
+float Radius;
+float Bias;
+float Intensity;
+float3 Color;
+
+void MainPS(
+	FScreenVertexOutput Input,
+	out float4 OutColor : SV_Target0)
+{
+	float2 BufferUV   = Input.UV;
+	float2 ClampedUV  = clamp(BufferUV, View.BufferBilinearUVMinMax.xy, View.BufferBilinearUVMinMax.zw);
+
+	float Weight         = 0.0;
+	float SceneDepth     = CalcSceneDepth(ClampedUV);
+	float NearSceneDepth = SceneDepth;
+
+	UNROLL
+	for (uint i = 0; i < kSampleCount; ++i)
+	{
+		float2 NewBufferUV   = BufferUV + ViewportUVToBufferUV(Radius * kSampleOffsetArray[i] * View.ViewSizeAndInvSize.zw);
+		float2 NewClampedUV  = clamp(NewBufferUV, View.BufferBilinearUVMinMax.xy, View.BufferBilinearUVMinMax.zw);
+		float  NewSceneDepth = CalcSceneDepth(NewClampedUV);
+		Weight += SceneDepth - NewSceneDepth;
+		NearSceneDepth = min(NewSceneDepth, NearSceneDepth);
+	}
+
+	float3 SceneColor = CalcSceneColor(ClampedUV);
+
+	float SkyMask = step(NearSceneDepth, 1000000.0);
+
+	float Outline = saturate(PositiveClampedPow(Weight, Bias) * Intensity) * SkyMask;
+
+	float3 Output = lerp(SceneColor, Color, Outline);
+
+	OutColor = float4(Output, 1.0);
+}
