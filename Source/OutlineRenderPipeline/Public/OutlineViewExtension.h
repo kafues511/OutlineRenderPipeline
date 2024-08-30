@@ -5,13 +5,15 @@
 #include "CoreMinimal.h"
 #include "SceneViewExtension.h"
 
+class UOutlineSubsystem;
+
 /**
  * ポストプロセスなアウトライン描画機能
  */
 class OUTLINERENDERPIPELINE_API FOutlineViewExtension : public FSceneViewExtensionBase
 {
 public:
-	FOutlineViewExtension(const FAutoRegister& AutoRegister);
+	FOutlineViewExtension(const FAutoRegister& AutoRegister, UOutlineSubsystem* InOutlineSubsystem);
 
 	virtual ~FOutlineViewExtension() = default;
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override {}
@@ -23,4 +25,11 @@ public:
 	 */
 	virtual void PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs) override;
 
+public:
+	/**  */
+	void Invalidate();
+
+private:
+	/**  */
+	UOutlineSubsystem* OutlineSubsystem;
 };

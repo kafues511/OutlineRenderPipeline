@@ -35,28 +35,32 @@ public:
 
 IMPLEMENT_GLOBAL_SHADER(FOutlinePS, "/Plugin/OutlineRenderPipeline/Private/Outline.usf", "MainPS", SF_Pixel);
 
-FOutlineViewExtension::FOutlineViewExtension(const FAutoRegister& AutoRegister)
+FOutlineViewExtension::FOutlineViewExtension(const FAutoRegister& AutoRegister, UOutlineSubsystem* InOutlineSubsystem)
 	: FSceneViewExtensionBase(AutoRegister)
+	, OutlineSubsystem(InOutlineSubsystem)
 {
+}
+
+void FOutlineViewExtension::Invalidate()
+{
+	OutlineSubsystem = nullptr;
 }
 
 void FOutlineViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
 {
-	Inputs.Validate();
-
-	FScene* Scene = View.Family->Scene->GetRenderScene();
-
-	const UOutlineSubsystem* Subsystem = UOutlineSubsystem::GetCurrent(Scene->World);
-	if (!IsValid(Subsystem))
+	if (!IsValid(OutlineSubsystem))
 	{
 		return;
 	}
 
-	const FOutlineSettings& Settings = Subsystem->GetOutlineSettings();
+	const FOutlineSettings Settings = OutlineSubsystem->GetOutlineSettingsForLock();
+
 	if (!Settings.Enabled)
 	{
 		return;
 	}
+
+	Inputs.Validate();
 
 	const FIntRect PrimaryViewRect = static_cast<const FViewInfo&>(View).ViewRect;
 

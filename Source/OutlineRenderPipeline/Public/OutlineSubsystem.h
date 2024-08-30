@@ -37,7 +37,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Outline Settings")
 	void OverrideOutlineSettings(const FOutlineSettings& NewValue);
 
+public:
+	/**  */
+	const FOutlineSettings GetOutlineSettingsForLock() const;
+
 private:
+	/**  */
+	mutable FCriticalSection CriticalSection;
+
 	/**  */
 	TSharedPtr<FOutlineViewExtension, ESPMode::ThreadSafe> ViewExtension;
 

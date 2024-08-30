@@ -5,18 +5,18 @@
 
 void UOutlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Super::Initialize(Collection);
-
-	UWorld* World = GetWorld();
-	check(World != nullptr);
-
 	// Initializing Scene view extension responsible for rendering regions.
-	ViewExtension = FSceneViewExtensions::NewExtension<FOutlineViewExtension>();
+	ViewExtension = FSceneViewExtensions::NewExtension<FOutlineViewExtension>(this);
 }
 
 void UOutlineSubsystem::Deinitialize()
 {
-	ViewExtension.Reset();
+	ENQUEUE_RENDER_COMMAND(OutlineSubsystem_Deinitialize)([this](FRHICommandListImmediate& RHICmdList)
+	{
+		ViewExtension->Invalidate();
+		ViewExtension.Reset();
+		ViewExtension = nullptr;
+	});
 }
 
 UOutlineSubsystem* UOutlineSubsystem::GetCurrent(const UWorld* World)
@@ -49,4 +49,10 @@ void UOutlineSubsystem::OverrideOutlineSettings(const FOutlineSettings& NewValue
 	SET_PP(Bias);
 	SET_PP(Intensity);
 	SET_PP(Color);
+}
+
+const FOutlineSettings UOutlineSubsystem::GetOutlineSettingsForLock() const
+{
+	FScopeLock Lock(&CriticalSection);
+	return OutlineSettings;
 }
