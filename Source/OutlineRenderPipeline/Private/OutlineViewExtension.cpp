@@ -46,16 +46,21 @@ void FOutlineViewExtension::Invalidate()
 	OutlineSubsystem = nullptr;
 }
 
-void FOutlineViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
+void FOutlineViewExtension::SetupViewFamily(FSceneViewFamily& InViewFamily)
 {
+	check(IsInGameThread());
+
 	if (!IsValid(OutlineSubsystem))
 	{
 		return;
 	}
 
-	const FOutlineSettings Settings = OutlineSubsystem->GetOutlineSettingsForLock();
+	FinalOutlineSettings = OutlineSubsystem->GetOutlineSettings();
+}
 
-	if (!Settings.Enabled)
+void FOutlineViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBuilder, const FSceneView& View, const FPostProcessingInputs& Inputs)
+{
+	if (!FinalOutlineSettings.Enabled)
 	{
 		return;
 	}
@@ -89,10 +94,10 @@ void FOutlineViewExtension::PrePostProcessPass_RenderThread(FRDGBuilder& GraphBu
 		FOutlinePS::FParameters* PassParameters = GraphBuilder.AllocParameters<FOutlinePS::FParameters>();
 		PassParameters->View = View.ViewUniformBuffer;
 		PassParameters->SceneTextures = GetSceneTextureShaderParameters(Inputs.SceneTextures);
-		PassParameters->Radius = Settings.Radius;
-		PassParameters->Bias = Settings.Bias;
-		PassParameters->Intensity = Settings.Intensity;
-		PassParameters->Color = FVector3f(Settings.Color);
+		PassParameters->Radius = FinalOutlineSettings.Radius;
+		PassParameters->Bias = FinalOutlineSettings.Bias;
+		PassParameters->Intensity = FinalOutlineSettings.Intensity;
+		PassParameters->Color = FVector3f(FinalOutlineSettings.Color);
 		PassParameters->RenderTargets[0] = FRenderTargetBinding(OutputTexture, ERenderTargetLoadAction::EClear);
 
 		const FScreenPassTexture BlackDummy(GSystemTextures.GetBlackDummy(GraphBuilder));
